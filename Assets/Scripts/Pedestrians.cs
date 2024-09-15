@@ -81,7 +81,7 @@ public class Pedestrians : MonoBehaviour
 
         if (closestTarget == null) return;
 
-        if (Vector3.Distance(closestTarget.transform.position, this.transform.position) < 30)
+        if (Vector3.Distance(closestTarget.transform.position, this.transform.position) < 10)
         {
             agent.speed = 15f;
             Evade();

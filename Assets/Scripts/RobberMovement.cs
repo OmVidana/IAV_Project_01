@@ -2,25 +2,22 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.SceneManagement;
 
 public class RobberMovement : MonoBehaviour
 {
     NavMeshAgent agent;
-    public GameObject target;
-    public GameObject pedestrianTarget;
+    public List<GameObject> targets = new List<GameObject>(); // List of general targets
+    public List<GameObject> pedestrianTargets = new List<GameObject>(); // List of pedestrian targets
 
     // Start is called before the first frame update
     void Start()
     {
         agent = this.GetComponent<NavMeshAgent>();
     }
-/*agent.isActiveAndEnabled &&*/
+
     void Seek(Vector3 location)
     {
-
         agent.SetDestination(location);
-    
     }
 
     void Flee(Vector3 location)
@@ -29,30 +26,54 @@ public class RobberMovement : MonoBehaviour
         agent.SetDestination(this.transform.position - fleeVector);
     }
 
-    void Pursue()
+    GameObject GetClosestTarget(List<GameObject> targetList)
     {
-        Vector3 targetDif = target.transform.position - this.transform.position;
-        float lookAhead = targetDif.magnitude / (agent.speed + target.GetComponent<Drive>().currentSpeed);
-        if (target.GetComponent<Drive>().currentSpeed <= 0.01f)
+        if (targetList.Count == 0)
         {
-            Seek(target.transform.position);
-            return;
+            return null; // Return null if there are no targets
         }
-        Seek(target.transform.position + target.transform.forward * lookAhead * 5);
 
+        GameObject closestTarget = targetList[0];
+        float closestDistance = Vector3.Distance(this.transform.position, closestTarget.transform.position);
+
+        foreach (GameObject target in targetList)
+        {
+            float distance = Vector3.Distance(this.transform.position, target.transform.position);
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestTarget = target;
+            }
+        }
+
+        return closestTarget;
     }
 
-    void Evade()
+    void Pursue()
     {
-        Vector3 targetDif = target.transform.position - this.transform.position;
-        float lookAhead = targetDif.magnitude / (agent.speed +12f /*target.GetComponent<Drive>().currentSpeed*/);
-        if (12f <= 0.01f)
+        GameObject closestTarget = GetClosestTarget(targets);
+        if (closestTarget == null) return; // Ensure there's a target to pursue
+
+        Vector3 targetDif = closestTarget.transform.position - this.transform.position;
+        float lookAhead = targetDif.magnitude / (agent.speed + closestTarget.GetComponent<Drive>().currentSpeed);
+        if (closestTarget.GetComponent<Drive>().currentSpeed <= 0.01f)
         {
-            Flee(target.transform.position);
+            Seek(closestTarget.transform.position);
             return;
         }
-        Flee(target.transform.position + target.transform.forward * lookAhead * 5);
+        Seek(closestTarget.transform.position + closestTarget.transform.forward * lookAhead * 5);
+    }
 
+    void Evade(GameObject closestTarget)
+    {
+        Vector3 targetDif = closestTarget.transform.position - this.transform.position;
+        float lookAhead = targetDif.magnitude / (agent.speed + 12f/*closestTarget.GetComponent<Drive>().currentSpeed*/);
+        if (12f <= 0.01f)
+        {
+            Flee(closestTarget.transform.position);
+            return;
+        }
+        Flee(closestTarget.transform.position + closestTarget.transform.forward * lookAhead * 5);
     }
 
     Vector3 wonderTarget = Vector3.zero;
@@ -76,11 +97,8 @@ public class RobberMovement : MonoBehaviour
 
     GameObject[] getHidingPlaces()
     {
-        GameObject[] hidingSpots;
-        hidingSpots = GameObject.FindGameObjectsWithTag("hide");
-        return hidingSpots;
+        return GameObject.FindGameObjectsWithTag("hide");
     }
-
 
     void Hide()
     {
@@ -91,7 +109,7 @@ public class RobberMovement : MonoBehaviour
 
         for (int i = 0; i < hidingSpots.Length; i++)
         {
-            Vector3 hideDirection = hidingSpots[i].transform.position - target.transform.position;
+            Vector3 hideDirection = hidingSpots[i].transform.position - GetClosestTarget(targets).transform.position;
             Vector3 hidePosition = hidingSpots[i].transform.position + hideDirection.normalized * 5;
 
             if (Vector3.Distance(this.transform.position, hidePosition) < closestDistance)
@@ -103,38 +121,76 @@ public class RobberMovement : MonoBehaviour
         Seek(chosenSpot);
     }
 
-    private void OnCollisionEnter(Collision collision)
+    /*private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject == target)
+        if (targets.Contains(collision.gameObject) || pedestrianTargets.Contains(collision.gameObject))
         {
             Time.timeScale = 0f;
         }
-    }
-
+    }*/
 
     // Update is called once per frame
     void Update()
     {
-        float closestDistance = Mathf.Infinity;
-        Vector3 chosenSpot = Vector3.zero;
-        GameObject[] hidingSpots = getHidingPlaces();
-        for (int i = 0; i < hidingSpots.Length; i++)
-        {
-            Vector3 hideDirection = hidingSpots[i].transform.position - target.transform.position;
-            Vector3 hidePosition = hidingSpots[i].transform.position + hideDirection.normalized * 5;
+        
+        GameObject closestTarget = GetClosestTarget(targets);
+        GameObject closestPedestrian = GetClosestTarget(pedestrianTargets);
+        if (Vector3.Distance(closestTarget.transform.position, this.transform.position) < 15){
+            Evade(closestTarget);
+        }else if(Vector3.Distance(closestPedestrian.transform.position, this.transform.position) < 25){
+            Seek(closestPedestrian.transform.position);
+        }else{
 
-            if (Vector3.Distance(this.transform.position, hidePosition) < closestDistance)
-            {
-                chosenSpot = hidePosition;
-                closestDistance = Vector3.Distance(this.transform.position, hidePosition);
+            float closestDistance = Mathf.Infinity;
+            Vector3 chosenSpot = Vector3.zero;
+            GameObject[] hidingSpots = getHidingPlaces();
+            for (int i = 0; i < hidingSpots.Length; i++){
+                Vector3 hideDirection = hidingSpots[i].transform.position - closestTarget.transform.position;
+                Vector3 hidePosition = hidingSpots[i].transform.position + hideDirection.normalized * 5;
+
+                if (Vector3.Distance(this.transform.position, hidePosition) < closestDistance){
+                    chosenSpot = hidePosition;
+                    closestDistance = Vector3.Distance(this.transform.position, hidePosition);
+                }
+            }
+            if (closestDistance < 10 ){
+                Hide();
+            }else{
+                Evade(closestPedestrian);
             }
         }
-        if(closestDistance<15){
-            Hide();
-        }if (closestDistance > 15 && Vector3.Distance(target.transform.position, this.transform.position) < 40){
+        
+        // Combine targets and pedestrian targets to find the closest overall target
+        /*List<GameObject> allTargets = new List<GameObject>(targets);
+        allTargets.AddRange(pedestrianTargets);
+
+        GameObject closestOverallTarget = GetClosestTarget(allTargets);
+        if (Vector3.Distance(closestOverallTarget.transform.position, this.transform.position) < 20){
             Evade();
-        }else {
-            Seek(pedestrianTarget.transform.position);
-        }
+        }else{
+            /*float closestDistance = Mathf.Infinity;
+            Vector3 chosenSpot = Vector3.zero;
+            GameObject[] hidingSpots = getHidingPlaces();
+            for (int i = 0; i < hidingSpots.Length; i++){
+                Vector3 hideDirection = hidingSpots[i].transform.position - closestOverallTarget.transform.position;
+                Vector3 hidePosition = hidingSpots[i].transform.position + hideDirection.normalized * 5;
+
+                if (Vector3.Distance(this.transform.position, hidePosition) < closestDistance){
+                    chosenSpot = hidePosition;
+                    closestDistance = Vector3.Distance(this.transform.position, hidePosition);
+                }
+            }*/
+            /*Seek(closestPedestrian.transform.position);
+            /*if (Vector3.Distance(closestPedestrian.transform.position, this.transform.position) < 20){
+                Seek(closestPedestrian.transform.position);
+            }else if (closestDistance < 10 ){
+                Hide();
+            }else{
+                Seek(closestPedestrian.transform.position);
+            }*/
+        //}
     }
 }
+
+
+
