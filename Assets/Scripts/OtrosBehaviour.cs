@@ -13,10 +13,12 @@ public class OtrosBehaviour : MonoBehaviour{
     {
         agent = this.GetComponent<NavMeshAgent>();
     }
-
+/*agent.isActiveAndEnabled &&*/
     void Seek(Vector3 location)
     {
+
         agent.SetDestination(location);
+    
     }
 
     void Flee(Vector3 location)
@@ -112,7 +114,10 @@ public class OtrosBehaviour : MonoBehaviour{
     // Update is called once per frame
     void Update()
     {
-        Pursue();
+        //Pursue();
+        Wonder();
+        //Seek(target.transform.position);
+        //Evade();
     }
 }
 
