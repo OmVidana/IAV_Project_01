@@ -8,6 +8,9 @@ public class Pedestrians : MonoBehaviour
 {
     NavMeshAgent agent;
     public List<GameObject> targets = new List<GameObject>(); 
+    public float wonderRadius;
+    public float wonderDistance;
+    public float wonderJitter;
 
     Vector3 wonderTarget = Vector3.zero;
 
@@ -49,9 +52,7 @@ public class Pedestrians : MonoBehaviour
 
     void Wonder()
     {
-        float wonderRadius = 10;
-        float wonderDistance = 20;
-        float wonderJitter = 5;
+        
         wonderTarget += new Vector3(Random.Range(-1.0f, 1.0f) * wonderJitter, 0, Random.Range(-1.0f, 1.0f) * wonderJitter);
         wonderTarget.Normalize();
         wonderTarget = wonderTarget * wonderRadius;

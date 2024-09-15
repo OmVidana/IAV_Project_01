@@ -6,6 +6,7 @@ using UnityEngine.AI;
 public class RobberMovement : MonoBehaviour
 {
     NavMeshAgent agent;
+    bool trapedCop=false;
     public List<GameObject> targets = new List<GameObject>(); // List of general targets
     public List<GameObject> pedestrianTargets = new List<GameObject>(); // List of pedestrian targets
 
@@ -121,43 +122,57 @@ public class RobberMovement : MonoBehaviour
         Seek(chosenSpot);
     }
 
-    /*private void OnCollisionEnter(Collision collision)
-    {
-        if (targets.Contains(collision.gameObject) || pedestrianTargets.Contains(collision.gameObject))
-        {
-            Time.timeScale = 0f;
+    private void OnCollisionEnter(Collision collision){
+        if (collision.gameObject.CompareTag("cop")){
+            trapedCop = true;
+            this.tag = "trapped";
+            
+            // Disable the collider
+            Collider collider = this.GetComponent<Collider>();
+            if (collider != null)
+            {
+                Debug.Log("si");
+                collider.enabled = false;
+            }
+
+            //Debug.Log("Trapped");
         }
-    }*/
+    }
+
 
     // Update is called once per frame
     void Update()
     {
-        
-        GameObject closestTarget = GetClosestTarget(targets);
-        GameObject closestPedestrian = GetClosestTarget(pedestrianTargets);
-        if (Vector3.Distance(closestTarget.transform.position, this.transform.position) < 15){
-            Evade(closestTarget);
-        }else if(Vector3.Distance(closestPedestrian.transform.position, this.transform.position) < 25){
-            Seek(closestPedestrian.transform.position);
-        }else{
+        if(!trapedCop){
+            GameObject closestTarget = GetClosestTarget(targets);
+            GameObject closestPedestrian = GetClosestTarget(pedestrianTargets);
+            if (Vector3.Distance(closestTarget.transform.position, this.transform.position) < 15){
+                Evade(closestTarget);
+            }else if(Vector3.Distance(closestPedestrian.transform.position, this.transform.position) < 25){
+                Seek(closestPedestrian.transform.position);
+            }else{
 
-            float closestDistance = Mathf.Infinity;
-            Vector3 chosenSpot = Vector3.zero;
-            GameObject[] hidingSpots = getHidingPlaces();
-            for (int i = 0; i < hidingSpots.Length; i++){
-                Vector3 hideDirection = hidingSpots[i].transform.position - closestTarget.transform.position;
-                Vector3 hidePosition = hidingSpots[i].transform.position + hideDirection.normalized * 5;
+                float closestDistance = Mathf.Infinity;
+                Vector3 chosenSpot = Vector3.zero;
+                GameObject[] hidingSpots = getHidingPlaces();
+                for (int i = 0; i < hidingSpots.Length; i++){
+                    Vector3 hideDirection = hidingSpots[i].transform.position - closestTarget.transform.position;
+                    Vector3 hidePosition = hidingSpots[i].transform.position + hideDirection.normalized * 5;
 
-                if (Vector3.Distance(this.transform.position, hidePosition) < closestDistance){
-                    chosenSpot = hidePosition;
-                    closestDistance = Vector3.Distance(this.transform.position, hidePosition);
+                    if (Vector3.Distance(this.transform.position, hidePosition) < closestDistance){
+                        chosenSpot = hidePosition;
+                        closestDistance = Vector3.Distance(this.transform.position, hidePosition);
+                    }
+                }
+                if (closestDistance < 10 ){
+                    Hide();
+                }else{
+                    Wonder();
                 }
             }
-            if (closestDistance < 10 ){
-                Hide();
-            }else{
-                Evade(closestPedestrian);
-            }
+        }else {
+            GameObject closestTarget = GetClosestTarget(targets);
+            Seek(closestTarget.transform.position);
         }
         
         // Combine targets and pedestrian targets to find the closest overall target

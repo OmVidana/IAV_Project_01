@@ -98,6 +98,6 @@ Material:
     - _EmissionColor: {r: 1.3348337, g: 1.3348337, b: 1.3348337, a: 1.3348337}
     - _EmissionColorUI: {r: 0, g: 0, b: 0, a: 1}
     - _EmissionColorWithMapUI: {r: 1, g: 1, b: 1, a: 1}
-    - _SpecColor: {r: 0.745283, g: 0.745283, b: 0.745283, a: 1}
+    - _SpecColor: {r: 0.74509805, g: 0.74509805, b: 0.79607844, a: 1}
     - _SpecularColor: {r: 0.15686275, g: 0.15686275, b: 0.15686275, a: 1}
   m_BuildTextureStacks: []
