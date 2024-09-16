@@ -1,14 +1,20 @@
+using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.AI;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class RobberMovement : MonoBehaviour
 {
     NavMeshAgent agent;
-    public List<GameObject> policeOfficers;
-    public float fleeDistance = 15.0f;
-    public float seekDistance = 10.0f;
-    private GameObject currentPedestrianTarget;
+    public float evadeDistance = 15.0f;   // Distancia para comenzar a evadir
+    public float fleeDistance = 5.0f;     // Distancia para comenzar a huir
+    public float seekDistance = 10.0f;    // Distancia para comenzar a perseguir peatones
+
+    public float wanderRadius = 5.0f;     // Radio para deambular
+    public float wanderDistance = 10.0f;  // Distancia para deambular
+    public float wanderJitter = 1.0f;     // Variación para deambular
+
+    Vector3 wanderTarget = Vector3.zero;
 
     void Awake()
     {
@@ -17,57 +23,80 @@ public class RobberMovement : MonoBehaviour
         {
             Debug.LogError("NavMeshAgent no está asignado al GameObject: " + gameObject.name);
         }
+
+        // Configuración del NavMeshAgent
+        agent.stoppingDistance = 0f;
+        agent.autoBraking = false;
+        agent.updateRotation = true;
+        agent.angularSpeed = 120f;
+        agent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
     }
 
     void Update()
     {
-        GameObject closestPolice = FindClosestPolice();
-        currentPedestrianTarget = FindClosestPedestrian();
+        GameObject targetThreat = DetectThreat();
+        GameObject targetPedestrian = DetectPedestrian();
 
-        // Evade the police officers if they are nearby
-        if (closestPolice != null && Vector3.Distance(this.transform.position, closestPolice.transform.position) < fleeDistance)
+        if (targetThreat != null)
         {
-            Evade(closestPolice.transform.position);
+            float distanceToThreat = Vector3.Distance(transform.position, targetThreat.transform.position);
+
+            if (distanceToThreat < fleeDistance)
+            {
+                // Huir si el policía o jugador está muy cerca
+                Flee(targetThreat.transform.position);
+            }
+            else
+            {
+                // Evadir al policía o jugador
+                Evade(targetThreat);
+            }
         }
-        // Seek the closest pedestrian if in range
-        else if (currentPedestrianTarget != null && Vector3.Distance(this.transform.position, currentPedestrianTarget.transform.position) < seekDistance)
+        else if (targetPedestrian != null)
         {
-            Seek(currentPedestrianTarget.transform.position);
+            // Perseguir al peatón
+            Seek(targetPedestrian.transform.position);
         }
         else
         {
+            // Comportamiento por defecto: Deambular
             Wander();
         }
     }
 
-    GameObject FindClosestPolice()
+    GameObject DetectThreat()
     {
+        // Detectar policías y jugador (etiquetados como "cop")
+        GameObject[] cops = GameObject.FindGameObjectsWithTag("cop");
+        GameObject closestThreat = null;
         float closestDistance = Mathf.Infinity;
-        GameObject closestPolice = null;
 
-        foreach (GameObject police in policeOfficers)
+        foreach (GameObject cop in cops)
         {
-            float distance = Vector3.Distance(this.transform.position, police.transform.position);
-            if (distance < closestDistance)
+            float distance = Vector3.Distance(transform.position, cop.transform.position);
+            if (distance < evadeDistance && distance < closestDistance)
             {
                 closestDistance = distance;
-                closestPolice = police;
+                closestThreat = cop;
             }
         }
 
-        return closestPolice;
+        return closestThreat;
     }
 
-    GameObject FindClosestPedestrian()
+    GameObject DetectPedestrian()
     {
+        // Detectar peatones
         GameObject[] pedestrians = GameObject.FindGameObjectsWithTag("Pedestrian");
-        float closestDistance = Mathf.Infinity;
         GameObject closestPedestrian = null;
+        float closestDistance = Mathf.Infinity;
 
         foreach (GameObject pedestrian in pedestrians)
         {
-            float distance = Vector3.Distance(this.transform.position, pedestrian.transform.position);
-            if (distance < closestDistance)
+            if (!pedestrian.activeInHierarchy) continue; // Ignorar peatones desactivados
+
+            float distance = Vector3.Distance(transform.position, pedestrian.transform.position);
+            if (distance < seekDistance && distance < closestDistance)
             {
                 closestDistance = distance;
                 closestPedestrian = pedestrian;
@@ -82,38 +111,51 @@ public class RobberMovement : MonoBehaviour
         agent.SetDestination(location);
     }
 
-    void Evade(Vector3 location)
+    void Flee(Vector3 location)
     {
-        Vector3 fleeVector = location - this.transform.position;
-        agent.SetDestination(this.transform.position - fleeVector);
+        Vector3 fleeVector = transform.position - location;
+        Vector3 newGoal = transform.position + fleeVector.normalized * 10.0f; // Ajusta la distancia según sea necesario
+        agent.SetDestination(newGoal);
+    }
+
+    void Evade(GameObject target)
+    {
+        Vector3 targetDir = target.transform.position - transform.position;
+        float lookAhead = targetDir.magnitude / (agent.speed + target.GetComponent<NavMeshAgent>().speed);
+        Vector3 futurePosition = target.transform.position + target.transform.forward * lookAhead;
+        Flee(futurePosition);
     }
 
     void Wander()
     {
-        float wanderRadius = 10.0f;
-        float wanderDistance = 20.0f;
-        float wanderJitter = 5.0f;
-        Vector3 wanderTarget = new Vector3(Random.Range(-1.0f, 1.0f) * wanderJitter, 0, Random.Range(-1.0f, 1.0f) * wanderJitter);
+        wanderTarget += new Vector3(
+            Random.Range(-1.0f, 1.0f) * wanderJitter,
+            0,
+            Random.Range(-1.0f, 1.0f) * wanderJitter
+        );
+
         wanderTarget.Normalize();
         wanderTarget *= wanderRadius;
 
-        Vector3 targetLocal = wanderTarget + new Vector3(0, 0, wanderDistance);
-        Vector3 targetWorld = this.gameObject.transform.InverseTransformVector(targetLocal);
+        Vector3 targetLocal = wanderTarget + Vector3.forward * wanderDistance;
+        Vector3 targetWorld = transform.TransformPoint(targetLocal);
 
-        agent.SetDestination(targetWorld);
+        Seek(targetWorld);
     }
 
-    // Handle collision with pedestrians
-    void OnCollisionEnter(Collision collision)
+    void OnTriggerEnter(Collider other)
     {
-        if (collision.gameObject.CompareTag("Pedestrian"))
+        if (other.CompareTag("Pedestrian"))
         {
-            // Stop pursuing the pedestrian
-            currentPedestrianTarget = null;
-
-            // Optionally: Destroy pedestrian or trigger another behavior
-            Destroy(collision.gameObject); // Destroy pedestrian when caught
-            Debug.Log("Pedestrian caught by thief!");
+            // Acción al atrapar al peatón
+            Debug.Log("Ladrón ha atrapado al peatón.");
+            other.gameObject.SetActive(false); // Desactivar el peatón
+        }
+        else if (other.CompareTag("cop"))
+        {
+            // Acción al ser capturado por policía o jugador
+            Debug.Log("Ladrón ha sido capturado por " + other.gameObject.name);
+            gameObject.SetActive(false); // Desactivar al ladrón
         }
     }
 }
