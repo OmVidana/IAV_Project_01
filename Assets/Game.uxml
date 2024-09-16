@@ -1,0 +1,5 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement name="root" style="flex-grow: 1; flex-direction: column; align-items: center; justify-content: flex-start;">
+        <ui:Label tabindex="0" text="Thieves left: " parse-escape-sequences="true" display-tooltip-when-elided="true" name="robber_count" style="justify-content: flex-start; align-self: center; width: 100%; height: 10%; font-size: 48px; -unity-text-align: middle-left; -unity-font-style: bold; padding-right: 2px; padding-left: 32px; color: rgb(255, 255, 255); border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0; -unity-text-outline-width: 4px; -unity-text-outline-color: rgb(0, 0, 0);" />
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
@@ -12,7 +12,7 @@ public class RobberMovement : MonoBehaviour
 
     public float wanderRadius = 5.0f;     // Radio para deambular
     public float wanderDistance = 10.0f;  // Distancia para deambular
-    public float wanderJitter = 1.0f;     // Variación para deambular
+    public float wanderJitter = 1.0f;     // Variaciï¿½n para deambular
 
     Vector3 wanderTarget = Vector3.zero;
 
@@ -21,10 +21,10 @@ public class RobberMovement : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
         if (agent == null)
         {
-            Debug.LogError("NavMeshAgent no está asignado al GameObject: " + gameObject.name);
+            Debug.LogError("NavMeshAgent no estï¿½ asignado al GameObject: " + gameObject.name);
         }
 
-        // Configuración del NavMeshAgent
+        // Configuraciï¿½n del NavMeshAgent
         agent.stoppingDistance = 0f;
         agent.autoBraking = false;
         agent.updateRotation = true;
@@ -43,18 +43,18 @@ public class RobberMovement : MonoBehaviour
 
             if (distanceToThreat < fleeDistance)
             {
-                // Huir si el policía o jugador está muy cerca
+                // Huir si el policï¿½a o jugador estï¿½ muy cerca
                 Flee(targetThreat.transform.position);
             }
             else
             {
-                // Evadir al policía o jugador
+                // Evadir al policï¿½a o jugador
                 Evade(targetThreat);
             }
         }
         else if (targetPedestrian != null)
         {
-            // Perseguir al peatón
+            // Perseguir al peatï¿½n
             Seek(targetPedestrian.transform.position);
         }
         else
@@ -66,7 +66,7 @@ public class RobberMovement : MonoBehaviour
 
     GameObject DetectThreat()
     {
-        // Detectar policías y jugador (etiquetados como "cop")
+        // Detectar policï¿½as y jugador (etiquetados como "cop")
         GameObject[] cops = GameObject.FindGameObjectsWithTag("cop");
         GameObject closestThreat = null;
         float closestDistance = Mathf.Infinity;
@@ -114,7 +114,7 @@ public class RobberMovement : MonoBehaviour
     void Flee(Vector3 location)
     {
         Vector3 fleeVector = transform.position - location;
-        Vector3 newGoal = transform.position + fleeVector.normalized * 10.0f; // Ajusta la distancia según sea necesario
+        Vector3 newGoal = transform.position + fleeVector.normalized * 10.0f; // Ajusta la distancia segï¿½n sea necesario
         agent.SetDestination(newGoal);
     }
 
@@ -147,15 +147,17 @@ public class RobberMovement : MonoBehaviour
     {
         if (other.CompareTag("Pedestrian"))
         {
-            // Acción al atrapar al peatón
-            Debug.Log("Ladrón ha atrapado al peatón.");
-            other.gameObject.SetActive(false); // Desactivar el peatón
+            // Acciï¿½n al atrapar al peatï¿½n
+            Debug.Log("Ladrï¿½n ha atrapado al peatï¿½n.");
+            other.gameObject.SetActive(false); // Desactivar el peatï¿½n
         }
         else if (other.CompareTag("cop"))
         {
-            // Acción al ser capturado por policía o jugador
-            Debug.Log("Ladrón ha sido capturado por " + other.gameObject.name);
-            gameObject.SetActive(false); // Desactivar al ladrón
+            // Acciï¿½n al ser capturado por policï¿½a o jugador
+            Debug.Log("Ladrï¿½n ha sido capturado por " + other.gameObject.name);
+            gameObject.SetActive(false); // Desactivar al ladrï¿½n
+            ThievesUI.thievesLeft--;
+            ThievesUI.thievesLabel.text = $"Thieves left: {ThievesUI.thievesLeft}";
         }
     }
 }
