@@ -47,7 +47,10 @@ public class Pedestrians : MonoBehaviour
             Flee(closestTarget.transform.position);
             return;
         }
-        Flee(closestTarget.transform.position + closestTarget.transform.forward * lookAhead * 5);
+        else
+        {
+            Flee(closestTarget.transform.position + closestTarget.transform.forward * lookAhead * 5);
+        }
     }
 
     void Wonder()

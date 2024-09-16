@@ -8,6 +8,7 @@ TagManager:
   - Robber
   - cop
   - trapped
+  - Pedestrian
   layers:
   - Default
   - TransparentFX
